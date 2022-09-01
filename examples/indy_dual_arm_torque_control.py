@@ -16,15 +16,13 @@ for i in range(int(duration/stepsize)):
     if i%1000 == 0:
         print("Simulation time: {:.3f}".format(robot.t))
  
-    if i%10000 == 0:
-        robot.reset()
-        robot.setControlMode("torque")
-        target_torque = [0 for i in range(robot.dof)]
+   # if i%10000 == 0:
+   #     robot.reset()
+   #     robot.setControlMode("torque")
+   #     target_torque = [0 for i in range(robot.dof)]
 
     target_torque = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    joint_pos, joint_vel = robot.getJointStates()
-    joint_acc = [0 for x in joint_pos]        
-    gravity_torque = robot.solveInverseDynamics(joint_pos, joint_vel, joint_acc)
+    gravity_torque = robot.getGravityandCoriolisTorque()
     robot.setTargetTorques(gravity_torque)
     robot.setRightGripperState(OPEN)
     robot.setLeftGripperState(OPEN)

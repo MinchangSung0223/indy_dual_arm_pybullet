@@ -4,12 +4,12 @@ sys.path.append('../src')
 import time
 from math import sin
 
-from panda import Panda
+from indy import Indy
 
 duration = 30
 stepsize = 1e-3
 
-robot = Panda(stepsize)
+robot = Indy(stepsize)
 robot.setControlMode("torque")
 
 for i in range(int(duration/stepsize)):

@@ -19,7 +19,7 @@ class IndyDualArm:
         # connect pybullet
         p.connect(p.GUI)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=30, cameraPitch=-20, cameraTargetPosition=[0, 0, 0.5])
+        p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=89.99, cameraPitch=-20, cameraTargetPosition=[0, 0, 0.5])
 
         p.resetSimulation()
         p.setTimeStep(self.stepsize)
@@ -209,12 +209,13 @@ class IndyDualArm:
         joint_vel = [x[1] for x in left_joint_states]        
         return joint_pos, joint_vel 
 
-    def solveInverseDynamics(self, pos, vel, acc):
-        return list(p.calculateInverseDynamics(self.robot, pos, vel, acc))
-
     def solveInverseKinematics(self, pos, ori):
         return list(p.calculateInverseKinematics(self.robot, 7, pos, ori))
-
+    def getGravityandCoriolisTorque(self):
+        joint_pos, joint_vel = self.getJointStates()
+        joint_acc = [0 for x in joint_pos]
+        return list(p.calculateInverseDynamics(self.robot,joint_pos, joint_vel, joint_acc))
+    	
 
 
 if __name__ == "__main__":

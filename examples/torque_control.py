@@ -4,12 +4,12 @@ sys.path.append('../src')
 import time
 from math import sin
 
-from panda import Panda
+from indy import Indy
 
 duration = 30
 stepsize = 1e-3
 
-robot = Panda(stepsize)
+robot = Indy(stepsize)
 robot.setControlMode("torque")
 
 for i in range(int(duration/stepsize)):
@@ -22,7 +22,7 @@ for i in range(int(duration/stepsize)):
         target_torque = [0 for i in range(robot.dof)]
 
     pos, vel = robot.getJointStates()
-    target_torque = [0,0,0,0,0,0,0]
+    target_torque = [0,0,0,0,0,0]
 
     robot.setTargetTorques(target_torque)
     robot.step()
