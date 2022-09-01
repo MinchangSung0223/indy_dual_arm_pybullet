@@ -1,9 +1,27 @@
 import pybullet as p
+import numpy as np
+from modern_robotics import *
+def w_p_to_slit(w,p):
+
+    Slist =[];
+
+    for i in range(0,len(w)):
+
+        v = -np.cross(np.array(w[i]),np.array(p[i]))
+
+        wi =np.array(w[i])
+
+        S = [wi[0],wi[1],wi[2],v[0],v[1],v[2]];
+
+        Slist.append(S)
+
+    return np.array(Slist).T
+
 
 class Indy:
-    def __init__(self, stepsize=1e-3, realtime=0):
+    def __init__(self, timeStep=1e-3, realtime=0):
         self.t = 0.0
-        self.stepsize = stepsize
+        self.timeStep = timeStep
         self.realtime = realtime
 
         self.control_mode = "torque" 
@@ -11,6 +29,36 @@ class Indy:
         self.position_control_gain_p = [0.01,0.01,0.01,0.01,0.01,0.01]
         self.position_control_gain_d = [1.0,1.0,1.0,1.0,1.0,1.0]
         self.max_torque = [100,100,100,100,100,100]
+        self.joint_init = [0,-0.2618,-1.5708,0,-1.309,0]
+        H1 = 0.3;
+        H2 = 0.45;
+        H3 = 0.350;
+        H4 = 0.228;
+        W1 = 0.0035;
+        W2 = 0.183;        
+        w =[]
+
+        p_ =[]
+
+        #right arm
+        base_p = []
+        base_w = []
+        base_p.append([0,0,0])
+        base_p.append([0,0,H1])
+        base_p.append([0,0,H1+H2])
+        base_p.append([0,-W1,H1+H2+H3])
+        base_p.append([0,-W1,H1+H2+H3])
+        base_p.append([0,-W1-W2,H1+H2+H3])
+
+        base_w.append([0 ,0,  1]);
+        base_w.append([0 ,-1, 0]);
+        base_w.append([0 ,-1,  0]);
+        base_w.append([0 ,0, 1]);
+        base_w.append([0 ,-1, 0]);
+        base_w.append([0  ,0, 1]);
+        self.M = np.array([[1,0,0,0],[0 ,1 ,0 ,-W1-W2 ],[0 ,0 ,1 ,H1+H2+H3+H4],[0 ,0 ,0 ,1 ]])
+        self.Slist = w_p_to_slit(base_w,base_p);
+        self.Blist = Adjoint(TransInv(self.M))@self.Slist;
 
         # connect pybullet
         p.connect(p.GUI)
@@ -18,7 +66,7 @@ class Indy:
         p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=30, cameraPitch=-20, cameraTargetPosition=[0, 0, 0.5])
 
         p.resetSimulation()
-        p.setTimeStep(self.stepsize)
+        p.setTimeStep(self.timeStep)
         p.setRealTimeSimulation(self.realtime)
         p.setGravity(0,0,-9.81)
 
@@ -41,7 +89,7 @@ class Indy:
         self.joints = []
         self.q_min = []
         self.q_max = []
-        self.target_pos = []
+        self.target_q = []
         self.target_torque = []
 
         for j in range(self.dof):
@@ -49,7 +97,7 @@ class Indy:
             self.joints.append(j)
             self.q_min.append(joint_info[8])
             self.q_max.append(joint_info[9])
-            self.target_pos.append((self.q_min[j] + self.q_max[j])/2.0)
+            self.target_q.append((self.q_min[j] + self.q_max[j])/2.0)
             self.target_torque.append(0.)
 
         self.reset()
@@ -58,14 +106,14 @@ class Indy:
         self.t = 0.0        
         self.control_mode = "torque"
         for j in range(self.dof):
-            self.target_pos[j] = (self.q_min[j] + self.q_max[j])/2.0
+            self.target_q[j] =self.joint_init[j]
             self.target_torque[j] = 0.
-            p.resetJointState(self.robot,j,targetValue=self.target_pos[j])
+            p.resetJointState(self.robot,j,targetValue=self.target_q[j])
 
         self.resetController()
 
     def step(self):
-        self.t += self.stepsize
+        self.t += self.timeStep
         p.stepSimulation()
 
     # robot functions
@@ -85,12 +133,12 @@ class Indy:
         else:
             raise Exception('wrong control mode')
 
-    def setTargetPositions(self, target_pos):
-        self.target_pos = target_pos
+    def setTargetPositions(self, target_q):
+        self.target_q = target_q
         p.setJointMotorControlArray(bodyUniqueId=self.robot,
                                     jointIndices=self.joints,
                                     controlMode=p.POSITION_CONTROL,
-                                    targetPositions=self.target_pos,
+                                    targetPositions=self.target_q,
                                     forces=self.max_torque,
                                     positionGains=self.position_control_gain_p,
                                     velocityGains=self.position_control_gain_d)
@@ -101,18 +149,55 @@ class Indy:
                                     jointIndices=self.joints,
                                     controlMode=p.TORQUE_CONTROL,
                                     forces=self.target_torque)
+    def getJacobianMatrix(self,q):
+        #result = p.getLinkState(self.robot,self.dof,computeLinkVelocity=1,computeForwardKinematics=1)
+        #link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+        #zero_vec = [0.0] * len(q)
+        #J = p.calculateJacobian(self.robot, self.dof, com_trn,q,zero_vec,zero_vec)
+        #linear_J,angular_J = J
+        #J = np.concatenate((np.array(angular_J),np.array(linear_J)),axis=0)
+        J = JacobianBody(self.Blist,np.array(q))
+
+        return J
 
     def getJointStates(self):
         joint_states = p.getJointStates(self.robot, self.joints)
-        joint_pos = [x[0] for x in joint_states]
-        joint_vel = [x[1] for x in joint_states]
-        return joint_pos, joint_vel 
+        q = [x[0] for x in joint_states]
+        qdot = [x[1] for x in joint_states]
+        return q, qdot 
 
-    def solveInverseDynamics(self, pos, vel, acc):
-        return list(p.calculateInverseDynamics(self.robot, pos, vel, acc))
+    def solveInverseDynamics(self, q, qdot, qddot):
+        return list(p.calculateInverseDynamics(self.robot, q, qdot, qddot))
 
     def solveInverseKinematics(self, pos, ori):
-        return list(p.calculateInverseKinematics(self.robot, 7, pos, ori))
+        return np.array(p.calculateInverseKinematics(self.robot, 7, pos, ori))
+    def getMassMatrix(self,q):
+        M = np.array(p.calculateMassMatrix(self.robot, q, flags=1))
+        M = M[0:self.dof,0:self.dof]
+        return np.array(M)
+    def computeTaskErr(self,posDesired,velDesired):
+        result = p.getLinkState(self.robot,self.dof,computeLinkVelocity=1,computeForwardKinematics=1)
+        link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+       # print(link_vt)
+        pos = [link_trn[0],link_trn[1],link_trn[2]]
+        vel = [link_vt[0],link_vt[1],link_vt[2]]
+        e = np.array(posDesired)-np.array(pos)
+        edot = np.array(velDesired)-np.array(vel)
+        return e, edot
+    def getFK(self,q):
+        #result = p.getLinkState(self.robot,self.dof,computeLinkVelocity=1,computeForwardKinematics=1)
+        #link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+        #pos = link_trn
+        #R = np.reshape(np.array(p.getMatrixFromQuaternion(link_rot)),(3,3));
+        #T = np.eye(4);
+        #T[0:3,0:3] = R
+        #T[0,3] = pos[0]
+        ##T[1,3] = pos[1]
+        #T[2,3] = pos[2]
+        T = FKinBody(self.M,self.Slist,np.array(q));
+      #  print(T)
+        return T
+
 
 
 if __name__ == "__main__":
