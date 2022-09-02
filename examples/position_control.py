@@ -5,14 +5,14 @@ import pybullet as p
 import time
 from math import sin
 
-from panda_ball import Panda
+from kuka import Kuka
 
 
 duration = 3000
 stepsize = 1e-3
 
-robot = Panda(stepsize)
-robot.setControlMode("position")
+robot = Kuka(stepsize)
+robot.setControlMode("torque")
 
 for i in range(int(duration/stepsize)):
     if i%1000 == 0:
@@ -25,13 +25,16 @@ for i in range(int(duration/stepsize)):
     #     pos, vel = robot.getJointStates()
     #     target_pos = pos
 
-    ball_pos, ball_ori = robot.getBallStates()
-    target_task_pos = ball_pos
-    target_task_pos[2] += .5
 
-    target_pos = robot.solveInverseKinematics(ball_pos,[1,0,0,0])
-    robot.setTargetPositions(target_pos)
 
+    #target_pos = robot.solveInverseKinematics([0.5,0.0,0.5],[0,0,0,1])
+    #robot.setTargetPositions(target_pos)
+
+    pos, vel = robot.getJointStates()
+    acc = [0 for x in pos]
+    target_torque = robot.solveInverseDynamics(pos, vel, acc)
+    robot.setTargetTorques(target_torque)
+    
     robot.step()
 
 

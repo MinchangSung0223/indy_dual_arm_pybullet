@@ -24,7 +24,7 @@ for i in range(int(duration/stepsize)):
     target_torque = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     gravity_torque = robot.getGravityandCoriolisTorque()
     robot.setTargetTorques(gravity_torque)
-    robot.setRightGripperState(OPEN)
+    robot.setRightGripperState(CLOSE)
     robot.setLeftGripperState(OPEN)
     robot.step()
     time.sleep(robot.stepsize)

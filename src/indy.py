@@ -28,7 +28,7 @@ class Indy:
 
         self.position_control_gain_p = [0.01,0.01,0.01,0.01,0.01,0.01]
         self.position_control_gain_d = [1.0,1.0,1.0,1.0,1.0,1.0]
-        self.max_torque = [100,100,100,100,100,100]
+        self.max_torque = [3000,3000,3000,3000,3000,3000]
         self.joint_init = [0,-0.2618,-1.5708,0,-1.309,0]
         H1 = 0.3;
         H2 = 0.45;
@@ -194,7 +194,7 @@ class Indy:
         #T[0,3] = pos[0]
         ##T[1,3] = pos[1]
         #T[2,3] = pos[2]
-        T = FKinBody(self.M,self.Slist,np.array(q));
+        T = FKinBody(self.M,self.Blist,np.array(q));
       #  print(T)
         return T
 

@@ -8,15 +8,15 @@ class Indy:
 
         self.control_mode = "torque" 
 
-        self.position_control_gain_p = [0.01,0.01,0.01,0.01,0.01,0.01]
+        self.position_control_gain_p = [0.1,0.1,0.1,0.1,0.1,0.1]
         self.position_control_gain_d = [1.0,1.0,1.0,1.0,1.0,1.0]
-        self.max_torque = [100,100,100,100,100,100]
+        self.max_torque = [1000,1000,1000,1000,1000,1000]
         self.joint_init = [0,-0.2618,-1.5708,0,-1.309,0]
 
         # connect pybullet
         p.connect(p.GUI)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=30, cameraPitch=-20, cameraTargetPosition=[0, 0, 0.5])
+        p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=89, cameraPitch=-60, cameraTargetPosition=[0, 0, 0.5])
 
         p.resetSimulation()
         p.setTimeStep(self.stepsize)
@@ -29,24 +29,25 @@ class Indy:
         self.plane = p.loadURDF("plane/plane.urdf",
                                 useFixedBase=True)
         p.changeDynamics(self.plane,-1,restitution=.95)
+        self.p = p
 
 
         # ball
-        self.ball = p.loadURDF("ball/ball.urdf")
-        p.changeDynamics(self.ball,-1,restitution=.95, linearDamping = 1e-2, angularDamping = 1e-2)
+       # self.ball = p.loadURDF("ball/ball.urdf")
+       # p.changeDynamics(self.ball,-1,restitution=.95, linearDamping = 1e-2, angularDamping = 1e-2)
 
-        self.default_ball_pos = [0.5,0,0.1]
-        self.default_ball_ori = [0,0,0,1]
-        p.resetBasePositionAndOrientation(self.ball, self.default_ball_pos, self.default_ball_ori)
+       # self.default_ball_pos = [0.5,0,0.1]
+       # self.default_ball_ori = [0,0,0,1]
+       # p.resetBasePositionAndOrientation(self.ball, self.default_ball_pos, self.default_ball_ori)
 
         # robot
         self.robot = p.loadURDF("indy/indy.urdf",
                                 useFixedBase=True,
                                 flags=p.URDF_USE_SELF_COLLISION)
-        
+        self.robot_id = self.robot;
         # robot parameters
         self.dof = p.getNumJoints(self.robot) - 1 # Virtual fixed joint between the flange and last link
-        print(self.dof)
+       # print(self.dof)
         #if self.dof != 6:
         #    raise Exception('wrong urdf file: number of joints is not 6')
 
@@ -99,8 +100,8 @@ class Indy:
 
     def setTargetPositions(self, target_pos):
         self.target_pos = target_pos
-        print(target_pos)
-        print(self.joints)
+       # print(target_pos)
+        #print(self.joints)
         p.setJointMotorControlArray(bodyUniqueId=self.robot,
                                     jointIndices=self.joints,
                                     controlMode=p.POSITION_CONTROL,
